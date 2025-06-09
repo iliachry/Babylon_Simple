@@ -16,7 +16,7 @@
         <h2>Authoring Page</h2>
         <input type="file" id="modelUpload" accept=".glb,.gltf">
         <div id="status"></div>
-        <iframe id="modelFrame" src="index.html?mode=author"></iframe>
+        <iframe id="modelFrame" src="babylon.html?mode=author"></iframe>
     </div>
     <script>
         const uploadInput = document.getElementById('modelUpload');
@@ -70,7 +70,7 @@
                     }
 
                     // Update iframe with the new model path
-                    modelFrame.src = `index.html?mode=author&modelUrl=${encodeURIComponent(modelPath)}`;
+                    modelFrame.src = `babylon.html?mode=author&modelUrl=${encodeURIComponent(modelPath)}`;
                     statusDiv.textContent = 'Model uploaded and initial settings created!';
                 } catch (error) {
                     console.error('Upload error:', error);

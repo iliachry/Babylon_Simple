@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-    <iframe id="modelFrame" src="index.html?mode=viewer"></iframe>
+    <iframe id="modelFrame" src="babylon.html?mode=viewer"></iframe>
     <script>
         // Fetch the model-info.json file
         fetch('/models/model-info.json')
@@ -26,7 +26,7 @@
             .then(settings => {
                 // Update the iframe source with the model URL from the JSON
                 const modelFrame = document.getElementById('modelFrame');
-                modelFrame.src = `index.html?mode=viewer&modelUrl=${encodeURIComponent(settings.modelUrl)}`;
+                modelFrame.src = `babylon.html?mode=viewer&modelUrl=${encodeURIComponent(settings.modelUrl)}`;
             })
             .catch(error => {
                 console.error('Error loading settings:', error);
