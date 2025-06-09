@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babylon.js Authoring Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        #container { padding: 20px; }
+        #modelFrame { width: 100%; height: 80vh; border: none; margin-top: 20px; }
+        #status { margin-top: 10px; color: #666; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>Authoring Page</h2>
+        <input type="file" id="modelUpload" accept=".glb,.gltf">
+        <div id="status"></div>
+        <iframe id="modelFrame" src="index.html?mode=author"></iframe>
+    </div>
+    <script>
+        const uploadInput = document.getElementById('modelUpload');
+        const modelFrame = document.getElementById('modelFrame');
+        const statusDiv = document.getElementById('status');
+
+        uploadInput.addEventListener('change', async function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                statusDiv.textContent = 'Uploading model...';
+                
+                try {
+                    // Create FormData to send the file
+                    const formData = new FormData();
+                    formData.append('model', file);
+
+                    // Send the file to the server
+                    const response = await fetch('/upload-model', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Upload failed');
+                    }
+
+                    const result = await response.json();
+                    const modelPath = result.path; // Server returns the saved path
+
+                    // Create initial settings.json
+                    const initialSettings = {
+                        modelName: file.name.split('.')[0],
+                        modelUrl: modelPath,
+                        alpha: -Math.PI / 2,
+                        beta: Math.PI / 4,
+                        radius: 5,
+                        target: { x: 0, y: 0, z: 0 }
+                    };
+
+                    // Save initial settings
+                    const settingsResponse = await fetch('/save-settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(initialSettings)
+                    });
+
+                    if (!settingsResponse.ok) {
+                        throw new Error('Failed to save initial settings');
+                    }
+
+                    // Update iframe with the new model path
+                    modelFrame.src = `index.html?mode=author&modelUrl=${encodeURIComponent(modelPath)}`;
+                    statusDiv.textContent = 'Model uploaded and initial settings created!';
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    statusDiv.textContent = 'Error uploading model. Please try again.';
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

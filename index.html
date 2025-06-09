@@ -1,0 +1,266 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babylon.js App - Author and Viewer Modes</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #renderCanvas { width: 100%; height: 100vh; }
+        #ui { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 8px 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .camera-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .camera-controls label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .camera-controls input {
+            width: 70px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .instructions {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+        }
+    </style>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <div id="ui"></div>
+    <script>
+        const canvas = document.getElementById('renderCanvas');
+        const ui = document.getElementById('ui');
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('mode') || 'viewer'; // Default to viewer
+        let modelUrl = params.get('modelUrl') || 'model.glb'; // Use modelUrl from query string if present
+        let cameraSettings = null;
+        const cameraSettingsParam = params.get('cameraSettings');
+        if (mode === 'viewer' && cameraSettingsParam) {
+            try {
+                cameraSettings = JSON.parse(decodeURIComponent(cameraSettingsParam));
+            } catch (e) {
+                console.error('Invalid cameraSettings JSON:', e);
+            }
+        }
+
+        // Function to create the Babylon.js app
+        function createBabylonApp(canvas, mode, modelUrl, cameraSettings) {
+            const engine = new BABYLON.Engine(canvas, true);
+            const scene = new BABYLON.Scene(engine);
+
+            // Camera setup
+            const camera = new BABYLON.ArcRotateCamera("camera", 0, 0, 10, BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+            camera.lowerBetaLimit = 0.1;
+            camera.upperBetaLimit = Math.PI - 0.1;
+            camera.wheelPrecision = 50; // Make zooming smoother
+            camera.panningSensibility = 50; // Make panning smoother
+            camera.angularSensibilityX = 1000; // Make rotation smoother
+            camera.angularSensibilityY = 1000;
+
+            // Light setup
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
+
+            // Load the 3D model
+            BABYLON.SceneLoader.Append(modelUrl, "", scene, function () {
+                if (mode === 'viewer' && cameraSettings) {
+                    // Apply saved camera settings
+                    camera.alpha = cameraSettings.alpha;
+                    camera.beta = cameraSettings.beta;
+                    camera.radius = cameraSettings.radius;
+                    camera.setTarget(new BABYLON.Vector3(
+                        cameraSettings.target.x,
+                        cameraSettings.target.y,
+                        cameraSettings.target.z
+                    ));
+                }
+            }, null, function (scene, message) {
+                console.error("Error loading model:", message);
+            });
+
+            // Mode-specific functionality
+            if (mode === 'author') {
+                // Camera controls
+                const cameraControls = document.createElement('div');
+                cameraControls.className = 'camera-controls';
+                
+                // Alpha control
+                const alphaControl = document.createElement('label');
+                alphaControl.innerHTML = 'Alpha: <input type="number" id="alphaInput" step="0.1">';
+                cameraControls.appendChild(alphaControl);
+                
+                // Beta control
+                const betaControl = document.createElement('label');
+                betaControl.innerHTML = 'Beta: <input type="number" id="betaInput" step="0.1">';
+                cameraControls.appendChild(betaControl);
+                
+                // Radius control
+                const radiusControl = document.createElement('label');
+                radiusControl.innerHTML = 'Radius: <input type="number" id="radiusInput" step="0.1">';
+                cameraControls.appendChild(radiusControl);
+
+                // Update camera controls when camera moves
+                scene.onBeforeRenderObservable.add(() => {
+                    document.getElementById('alphaInput').value = camera.alpha.toFixed(2);
+                    document.getElementById('betaInput').value = camera.beta.toFixed(2);
+                    document.getElementById('radiusInput').value = camera.radius.toFixed(2);
+                });
+
+                // Save button
+                const saveButton = document.createElement('button');
+                saveButton.textContent = 'Save Camera Settings';
+                saveButton.onclick = async function() {
+                    // Extract model name from URL
+                    const modelName = modelUrl.split('/').pop().split('.')[0];
+                    const settings = {
+                        modelName: modelName,
+                        modelUrl: modelUrl,
+                        alpha: camera.alpha,
+                        beta: camera.beta,
+                        radius: camera.radius,
+                        target: { 
+                            x: camera.target.x, 
+                            y: camera.target.y, 
+                            z: camera.target.z 
+                        }
+                    };
+                    
+                    try {
+                        // Save settings to server
+                        const response = await fetch('/save-settings', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(settings)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to save settings');
+                        }
+
+                        alert('Camera settings saved!');
+                    } catch (error) {
+                        console.error('Error saving settings:', error);
+                        alert('Error saving camera settings. Please try again.');
+                    }
+                };
+
+                ui.appendChild(cameraControls);
+                ui.appendChild(saveButton);
+            }
+
+            // Add instructions for camera controls
+            const instructions = document.createElement('div');
+            instructions.className = 'instructions';
+            instructions.innerHTML = `
+                <strong>Camera Controls:</strong><br>
+                • Left Mouse: Rotate<br>
+                • Right Mouse: Pan<br>
+                • Mouse Wheel: Zoom<br>
+                • Touch: Swipe to rotate, pinch to zoom
+            `;
+            ui.appendChild(instructions);
+
+            // Render loop
+            engine.runRenderLoop(function () {
+                scene.render();
+            });
+
+            // Resize handler
+            window.addEventListener('resize', function () {
+                engine.resize();
+            });
+        }
+
+        // Example camera settings for viewer mode (normally from server)
+        if (mode === 'viewer') {
+            cameraSettings = {
+                alpha: -Math.PI / 2,
+                beta: Math.PI / 4,
+                radius: 5,
+                target: { x: 0, y: 0, z: 0 }
+            };
+        }
+
+        // Initialize the app
+        createBabylonApp(canvas, mode, modelUrl, cameraSettings);
+    </script>
+</body>
+</html>
