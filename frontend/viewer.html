@@ -24,9 +24,15 @@
         fetch('/models/model-info.json')
             .then(response => response.json())
             .then(settings => {
-                // Update the iframe source with the model URL from the JSON
+                // Pass camera settings as a URL parameter
+                const cameraSettingsParam = encodeURIComponent(JSON.stringify({
+                    alpha: settings.alpha,
+                    beta: settings.beta,
+                    radius: settings.radius,
+                    target: settings.target
+                }));
                 const modelFrame = document.getElementById('modelFrame');
-                modelFrame.src = `babylon.html?mode=viewer&modelUrl=${encodeURIComponent(settings.modelUrl)}`;
+                modelFrame.src = `babylon.html?mode=viewer&modelUrl=${encodeURIComponent(settings.modelUrl)}&cameraSettings=${cameraSettingsParam}`;
             })
             .catch(error => {
                 console.error('Error loading settings:', error);

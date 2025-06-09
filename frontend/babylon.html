@@ -107,16 +107,38 @@
         const ui = document.getElementById('ui');
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode') || 'viewer'; // Default to viewer
-        let modelUrl = params.get('modelUrl') || '/models/model.glb'; // Use modelUrl from query string if present
+        let modelUrl = params.get('modelUrl'); // Only from query string if present
         let cameraSettings = null;
         const cameraSettingsParam = params.get('cameraSettings');
-        if (mode === 'viewer' && cameraSettingsParam) {
-            try {
-                cameraSettings = JSON.parse(decodeURIComponent(cameraSettingsParam));
-            } catch (e) {
-                console.error('Invalid cameraSettings JSON:', e);
+        async function startApp() {
+            if (mode === 'viewer' && !cameraSettingsParam) {
+                // Fetch from backend if not present in URL
+                try {
+                    const response = await fetch('/models/model-info.json');
+                    const settings = await response.json();
+                    modelUrl = settings.modelUrl;
+                    cameraSettings = {
+                        alpha: settings.alpha,
+                        beta: settings.beta,
+                        radius: settings.radius,
+                        target: settings.target
+                    };
+                } catch (e) {
+                    console.error('Failed to load model-info.json:', e);
+                }
+            } else if (mode === 'viewer' && cameraSettingsParam) {
+                try {
+                    cameraSettings = JSON.parse(decodeURIComponent(cameraSettingsParam));
+                } catch (e) {
+                    console.error('Invalid cameraSettings JSON:', e);
+                }
             }
+            // Fallbacks
+            if (!modelUrl) modelUrl = '/models/model.glb';
+            // Initialize the app
+            createBabylonApp(canvas, mode, modelUrl, cameraSettings);
         }
+        startApp();
 
         // Function to create the Babylon.js app
         function createBabylonApp(canvas, mode, modelUrl, cameraSettings) {
@@ -152,6 +174,20 @@
                 }
             }, null, function (scene, message) {
                 console.error("Error loading model:", message);
+                // Show user-friendly error message
+                const errorDiv = document.createElement('div');
+                errorDiv.style.position = 'absolute';
+                errorDiv.style.top = '50%';
+                errorDiv.style.left = '50%';
+                errorDiv.style.transform = 'translate(-50%, -50%)';
+                errorDiv.style.background = 'rgba(255,0,0,0.8)';
+                errorDiv.style.color = 'white';
+                errorDiv.style.padding = '20px';
+                errorDiv.style.borderRadius = '8px';
+                errorDiv.style.fontSize = '18px';
+                errorDiv.style.zIndex = '1000';
+                errorDiv.innerText = 'Error loading model: ' + message + '\nPlease check that the model file exists and the path is correct.';
+                document.body.appendChild(errorDiv);
             });
 
             // Mode-specific functionality
@@ -248,19 +284,6 @@
                 engine.resize();
             });
         }
-
-        // Example camera settings for viewer mode (normally from server)
-        if (mode === 'viewer') {
-            cameraSettings = {
-                alpha: -Math.PI / 2,
-                beta: Math.PI / 4,
-                radius: 5,
-                target: { x: 0, y: 0, z: 0 }
-            };
-        }
-
-        // Initialize the app
-        createBabylonApp(canvas, mode, modelUrl, cameraSettings);
     </script>
 </body>
 </html>
