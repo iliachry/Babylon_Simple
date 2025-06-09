@@ -20,8 +20,8 @@
 <body>
     <iframe id="modelFrame" src="index.html?mode=viewer"></iframe>
     <script>
-        // Fetch the settings.json file
-        fetch('settings.json')
+        // Fetch the model-info.json file
+        fetch('model-info.json')
             .then(response => response.json())
             .then(settings => {
                 // Update the iframe source with the model URL from the JSON
@@ -30,7 +30,7 @@
             })
             .catch(error => {
                 console.error('Error loading settings:', error);
-                alert('Error loading camera settings. Please make sure settings.json exists.');
+                alert('Error loading camera settings. Please make sure model-info.json exists.');
             });
     </script>
 </body>

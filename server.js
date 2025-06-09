@@ -40,7 +40,7 @@ app.post('/upload-model', upload.single('model'), (req, res) => {
 app.post('/save-settings', (req, res) => {
     try {
         const settings = req.body;
-        fs.writeFileSync('settings.json', JSON.stringify(settings, null, 2));
+        fs.writeFileSync('model-info.json', JSON.stringify(settings, null, 2));
         res.json({ success: true });
     } catch (error) {
         console.error('Error saving settings:', error);

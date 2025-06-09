@@ -46,7 +46,7 @@
                     const result = await response.json();
                     const modelPath = result.path; // Server returns the saved path
 
-                    // Create initial settings.json
+                    // Create initial model-info.json
                     const initialSettings = {
                         modelName: file.name.split('.')[0],
                         modelUrl: modelPath,
