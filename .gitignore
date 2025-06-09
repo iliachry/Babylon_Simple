@@ -1,9 +1,6 @@
 # Node.js dependencies
 node_modules/
 
-# Local settings
-settings.json
-
 # Logs
 logs/
 *.log
