@@ -107,7 +107,7 @@
         const ui = document.getElementById('ui');
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode') || 'viewer'; // Default to viewer
-        let modelUrl = params.get('modelUrl') || 'model.glb'; // Use modelUrl from query string if present
+        let modelUrl = params.get('modelUrl') || '/models/model.glb'; // Use modelUrl from query string if present
         let cameraSettings = null;
         const cameraSettingsParam = params.get('cameraSettings');
         if (mode === 'viewer' && cameraSettingsParam) {

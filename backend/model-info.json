@@ -1,0 +1,12 @@
+{
+  "modelName": "tree0",
+  "modelUrl": "/models/tree0.glb",
+  "alpha": 0.4063556658404277,
+  "beta": 2.6753002285334824,
+  "radius": 11.856390298000731,
+  "target": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  }
+}

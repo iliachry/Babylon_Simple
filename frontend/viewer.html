@@ -21,7 +21,7 @@
     <iframe id="modelFrame" src="index.html?mode=viewer"></iframe>
     <script>
         // Fetch the model-info.json file
-        fetch('model-info.json')
+        fetch('/models/model-info.json')
             .then(response => response.json())
             .then(settings => {
                 // Update the iframe source with the model URL from the JSON
