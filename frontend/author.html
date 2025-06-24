@@ -5,74 +5,161 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Babylon.js Authoring Page</title>
     <link rel="stylesheet" href="styles/author.css">
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
-    <div id="container">
-        <h2>Authoring Page</h2>
-        <input type="file" id="modelUpload" accept=".glb,.gltf">
-        <div id="status"></div>
-        <iframe id="modelFrame" src="babylon.html?mode=author"></iframe>
+    <div class="author-container">
+        <div class="sidebar">
+            <div class="header">
+                <h2>Authoring Page</h2>
+            </div>
+            <div class="upload-section">
+                <input type="file" id="modelUpload" accept=".glb,.gltf">
+                <div id="status">Upload a model to begin.</div>
+            </div>
+            <div id="author-controls"></div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="renderCanvas"></canvas>
+        </div>
     </div>
     <script>
         const uploadInput = document.getElementById('modelUpload');
-        const modelFrame = document.getElementById('modelFrame');
         const statusDiv = document.getElementById('status');
+        const canvas = document.getElementById('renderCanvas');
+        const authorControls = document.getElementById('author-controls');
+        let engine = null;
+        let scene = null;
+        let camera = null;
 
         uploadInput.addEventListener('change', async function(event) {
             const file = event.target.files[0];
             if (file) {
                 statusDiv.textContent = 'Uploading model...';
-                
                 try {
-                    // Create FormData to send the file
                     const formData = new FormData();
                     formData.append('model', file);
 
-                    // Send the file to the server
                     const response = await fetch('/upload-model', {
                         method: 'POST',
                         body: formData
                     });
 
-                    if (!response.ok) {
-                        throw new Error('Upload failed');
-                    }
+                    if (!response.ok) throw new Error('Upload failed');
 
                     const result = await response.json();
-                    const modelPath = result.path; // Server returns the saved path
+                    const modelPath = result.path;
 
-                    // Create initial model-info.json
                     const initialSettings = {
                         modelName: file.name.split('.')[0],
                         modelUrl: modelPath,
                         alpha: 0,
-                        beta: 0,
+                        beta: Math.PI / 2,
                         radius: 10,
                         target: { x: 0, y: 0, z: 0 }
                     };
 
-                    // Save initial settings
                     const settingsResponse = await fetch('/save-settings', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(initialSettings)
                     });
 
-                    if (!settingsResponse.ok) {
-                        throw new Error('Failed to save initial settings');
-                    }
+                    if (!settingsResponse.ok) throw new Error('Failed to save initial settings');
 
-                    // Update iframe with the new model path
-                    modelFrame.src = `babylon.html?mode=author&modelUrl=${encodeURIComponent(modelPath)}`;
-                    statusDiv.textContent = 'Model uploaded and initial settings created!';
+                    statusDiv.textContent = 'Model loaded. Adjust camera and save.';
+                    loadBabylonAuthor(modelPath);
                 } catch (error) {
                     console.error('Upload error:', error);
                     statusDiv.textContent = 'Error uploading model. Please try again.';
                 }
             }
         });
+
+        function loadBabylonAuthor(modelUrl) {
+            if (engine) {
+                engine.dispose();
+                authorControls.innerHTML = '';
+            }
+            engine = new BABYLON.Engine(canvas, true);
+            scene = new BABYLON.Scene(engine);
+
+            camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 2, 10, BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+            camera.lowerBetaLimit = 0.1;
+            camera.upperBetaLimit = Math.PI - 0.1;
+            camera.wheelPrecision = 50;
+            camera.panningSensibility = 50;
+            camera.angularSensibilityX = 1000;
+            camera.angularSensibilityY = 1000;
+
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
+
+            BABYLON.SceneLoader.Append(modelUrl, "", scene, function () {
+                const cameraControlsGroup = document.createElement('div');
+                cameraControlsGroup.className = 'camera-controls-group';
+                cameraControlsGroup.innerHTML = `
+                    <label>Alpha: <input type="number" id="alphaInput" step="0.1"></label>
+                    <label>Beta: <input type="number" id="betaInput" step="0.1"></label>
+                    <label>Radius: <input type="number" id="radiusInput" step="0.1"></label>
+                `;
+                authorControls.appendChild(cameraControlsGroup);
+
+                scene.onBeforeRenderObservable.add(() => {
+                    document.getElementById('alphaInput').value = camera.alpha.toFixed(2);
+                    document.getElementById('betaInput').value = camera.beta.toFixed(2);
+                    document.getElementById('radiusInput').value = camera.radius.toFixed(2);
+                });
+
+                const saveButton = document.createElement('button');
+                saveButton.className = 'save-btn';
+                saveButton.textContent = 'Save Camera Settings';
+                saveButton.onclick = async function() {
+                    const modelName = modelUrl.split('/').pop().split('.')[0];
+                    const settings = {
+                        modelName: modelName,
+                        modelUrl: modelUrl,
+                        alpha: camera.alpha,
+                        beta: camera.beta,
+                        radius: camera.radius,
+                        target: { x: camera.target.x, y: camera.target.y, z: camera.target.z }
+                    };
+                    try {
+                        const response = await fetch('/save-settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(settings)
+                        });
+                        if (!response.ok) throw new Error('Failed to save settings');
+                        alert('Camera settings saved!');
+                    } catch (error) {
+                        alert('Error saving camera settings. Please try again.');
+                    }
+                };
+                authorControls.appendChild(saveButton);
+
+                const instructions = document.createElement('div');
+                instructions.className = 'instructions';
+                instructions.innerHTML = `
+                    <strong>Camera Controls</strong><br>
+                    • Left Mouse: Rotate<br>
+                    • Right Mouse: Pan<br>
+                    • Mouse Wheel: Zoom
+                `;
+                authorControls.appendChild(instructions);
+
+            }, null, function (scene, message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerText = 'Error loading model: ' + message + '\nPlease check that the model file exists and the path is correct.';
+                document.body.appendChild(errorDiv);
+            });
+
+            engine.runRenderLoop(() => scene.render());
+            window.addEventListener('resize', () => engine.resize());
+        }
     </script>
 </body>
 </html> 

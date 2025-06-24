@@ -5,8 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Babylon.js Viewer Page</title>
     <link rel="stylesheet" href="styles/viewer.css">
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
-    <iframe id="modelFrame" src="babylon.html?mode=viewer"></iframe>
+    <canvas id="renderCanvas"></canvas>
+    <div id="ui"></div>
+    <script>
+        const canvas = document.getElementById('renderCanvas');
+        const ui = document.getElementById('ui');
+        let modelUrl = null;
+        let cameraSettings = null;
+        (async () => {
+            try {
+                const response = await fetch('/models/model-info.json');
+                const settings = await response.json();
+                modelUrl = settings.modelUrl;
+                cameraSettings = {
+                    alpha: settings.alpha,
+                    beta: settings.beta,
+                    radius: settings.radius,
+                    target: settings.target
+                };
+            } catch (e) {
+                console.error('Failed to load model-info.json:', e);
+            }
+            createBabylonViewer(canvas, modelUrl, cameraSettings);
+        })();
+
+        function createBabylonViewer(canvas, modelUrl, cameraSettings) {
+            const engine = new BABYLON.Engine(canvas, true);
+            const scene = new BABYLON.Scene(engine);
+
+            // Camera setup
+            const camera = new BABYLON.ArcRotateCamera("camera", 0,  Math.PI / 2, 10, BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+            camera.lowerBetaLimit = 0.1;
+            camera.upperBetaLimit = Math.PI - 0.1;
+            camera.wheelPrecision = 50;
+            camera.panningSensibility = 50;
+            camera.angularSensibilityX = 1000;
+            camera.angularSensibilityY = 1000;
+
+            // Light setup
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
+
+            // Load the 3D model
+            BABYLON.SceneLoader.Append(modelUrl, "", scene, function () {
+                if (cameraSettings) {
+                    camera.alpha = cameraSettings.alpha;
+                    camera.beta = cameraSettings.beta;
+                    camera.radius = cameraSettings.radius;
+                    camera.setTarget(new BABYLON.Vector3(
+                        cameraSettings.target.x,
+                        cameraSettings.target.y,
+                        cameraSettings.target.z
+                    ));
+
+                    // Show initial camera settings in the UI
+                    const cameraInfo = document.createElement('div');
+                    cameraInfo.className = 'camera-info';
+                    cameraInfo.innerHTML = `
+                        <strong>Camera Settings</strong><br>
+                        Alpha: ${cameraSettings.alpha}<br>
+                        Beta: ${cameraSettings.beta}<br>
+                        Radius: ${cameraSettings.radius}<br>
+                        Target: (${cameraSettings.target.x}, ${cameraSettings.target.y}, ${cameraSettings.target.z})
+                    `;
+                    document.body.appendChild(cameraInfo);
+                }
+            }, null, function (scene, message) {
+                console.error("Error loading model:", message);
+                // Show user-friendly error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerText = 'Error loading model: ' + message + '\nPlease check that the model file exists and the path is correct.';
+                document.body.appendChild(errorDiv);
+            });
+
+            // Add instructions for camera controls
+            const instructions = document.createElement('div');
+            instructions.className = 'instructions';
+            instructions.innerHTML = `
+                <strong>Camera Controls</strong><br>
+                • Left Mouse: Rotate<br>
+                • Right Mouse: Pan<br>
+                • Mouse Wheel: Zoom<br>
+                • Touch: Swipe to rotate, pinch to zoom
+            `;
+            ui.appendChild(instructions);
+
+            // Render loop
+            engine.runRenderLoop(function () {
+                scene.render();
+            });
+
+            // Resize handler
+            window.addEventListener('resize', function () {
+                engine.resize();
+            });
+        }
+    </script>
 </body>
 </html> 
