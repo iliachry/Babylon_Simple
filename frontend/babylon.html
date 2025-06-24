@@ -18,10 +18,9 @@
         const mode = params.get('mode') || 'viewer'; // Default to viewer
         let modelUrl = params.get('modelUrl'); // Only from query string if present
         let cameraSettings = null;
-        const cameraSettingsParam = params.get('cameraSettings');
-        async function startApp() {
-            if (mode === 'viewer' && !cameraSettingsParam) {
-                // Fetch from backend if not present in URL
+        (async () => {
+            if (mode === 'viewer') {
+                // Always fetch from backend
                 try {
                     const response = await fetch('/models/model-info.json');
                     const settings = await response.json();
@@ -35,19 +34,12 @@
                 } catch (e) {
                     console.error('Failed to load model-info.json:', e);
                 }
-            } else if (mode === 'viewer' && cameraSettingsParam) {
-                try {
-                    cameraSettings = JSON.parse(decodeURIComponent(cameraSettingsParam));
-                } catch (e) {
-                    console.error('Invalid cameraSettings JSON:', e);
-                }
+            } else if (mode === 'author') {
+                // In author mode, use modelUrl from URL, no cameraSettings
             }
-            // Fallbacks
-            if (!modelUrl) modelUrl = '/models/model.glb';
             // Initialize the app
             createBabylonApp(canvas, mode, modelUrl, cameraSettings);
-        }
-        startApp();
+        })();
 
         // Function to create the Babylon.js app
         function createBabylonApp(canvas, mode, modelUrl, cameraSettings) {

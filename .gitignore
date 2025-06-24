@@ -17,4 +17,5 @@ Thumbs.db
 .env.*
 
 # Misc
-*.swp 
+*.swp
+backend/model-info.json

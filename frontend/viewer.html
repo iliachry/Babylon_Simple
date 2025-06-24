@@ -8,25 +8,5 @@
 </head>
 <body>
     <iframe id="modelFrame" src="babylon.html?mode=viewer"></iframe>
-    <script>
-        // Fetch the model-info.json file
-        fetch('/models/model-info.json')
-            .then(response => response.json())
-            .then(settings => {
-                // Pass camera settings as a URL parameter
-                const cameraSettingsParam = encodeURIComponent(JSON.stringify({
-                    alpha: settings.alpha,
-                    beta: settings.beta,
-                    radius: settings.radius,
-                    target: settings.target
-                }));
-                const modelFrame = document.getElementById('modelFrame');
-                modelFrame.src = `babylon.html?mode=viewer&modelUrl=${encodeURIComponent(settings.modelUrl)}&cameraSettings=${cameraSettingsParam}`;
-            })
-            .catch(error => {
-                console.error('Error loading settings:', error);
-                alert('Error loading camera settings. Please make sure model-info.json exists.');
-            });
-    </script>
 </body>
 </html> 
