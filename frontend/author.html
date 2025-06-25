@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Babylon.js Authoring Page</title>
+    <title>3D Model Authoring Tool</title>
     <link rel="stylesheet" href="styles/author.css">
+    <!-- Babylon.js core and loader -->
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
@@ -12,7 +13,7 @@
     <div class="author-container">
         <div class="sidebar">
             <div class="header">
-                <h2>Authoring Page</h2>
+                <h2>3D Model Authoring Tool</h2>
             </div>
             <div class="upload-section">
                 <input type="file" id="modelUpload" accept=".glb,.gltf">
@@ -25,6 +26,7 @@
         </div>
     </div>
     <script>
+        // Get references to DOM elements
         const uploadInput = document.getElementById('modelUpload');
         const statusDiv = document.getElementById('status');
         const canvas = document.getElementById('renderCanvas');
@@ -33,14 +35,17 @@
         let scene = null;
         let camera = null;
 
+        // Handle model upload
         uploadInput.addEventListener('change', async function(event) {
             const file = event.target.files[0];
             if (file) {
                 statusDiv.textContent = 'Uploading model...';
                 try {
+                    // Prepare the file for upload
                     const formData = new FormData();
                     formData.append('model', file);
 
+                    // Upload the model to the backend
                     const response = await fetch('/upload-model', {
                         method: 'POST',
                         body: formData
@@ -51,6 +56,7 @@
                     const result = await response.json();
                     const modelPath = result.path;
 
+                    // Create initial camera settings for the new model
                     const initialSettings = {
                         modelName: file.name.split('.')[0],
                         modelUrl: modelPath,
@@ -60,6 +66,7 @@
                         target: { x: 0, y: 0, z: 0 }
                     };
 
+                    // Save the initial settings to the backend
                     const settingsResponse = await fetch('/save-settings', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -69,6 +76,7 @@
                     if (!settingsResponse.ok) throw new Error('Failed to save initial settings');
 
                     statusDiv.textContent = 'Model loaded. Adjust camera and save.';
+                    // Load the Babylon.js scene with the uploaded model
                     loadBabylonAuthor(modelPath);
                 } catch (error) {
                     console.error('Upload error:', error);
@@ -78,13 +86,16 @@
         });
 
         function loadBabylonAuthor(modelUrl) {
+            // Dispose of previous engine/scene if any
             if (engine) {
                 engine.dispose();
                 authorControls.innerHTML = '';
             }
+            // Create new engine and scene
             engine = new BABYLON.Engine(canvas, true);
             scene = new BABYLON.Scene(engine);
 
+            // Set up the camera
             camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 2, 10, BABYLON.Vector3.Zero(), scene);
             camera.attachControl(canvas, true);
             camera.lowerBetaLimit = 0.1;
@@ -94,10 +105,13 @@
             camera.angularSensibilityX = 1000;
             camera.angularSensibilityY = 1000;
 
+            // Add a hemispheric light
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
+            // Load the 3D model
             BABYLON.SceneLoader.Append(modelUrl, "", scene, function () {
+                // Add camera controls UI
                 const cameraControlsGroup = document.createElement('div');
                 cameraControlsGroup.className = 'camera-controls-group';
                 cameraControlsGroup.innerHTML = `
@@ -109,7 +123,7 @@
                     <label>Target Z: <input type="number" id="targetZ" step="0.1" readonly></label>
                 `;
                 authorControls.appendChild(cameraControlsGroup);
-
+                // Update camera controls live as the camera moves
                 scene.onBeforeRenderObservable.add(() => {
                     document.getElementById('alphaInput').value = camera.alpha.toFixed(2);
                     document.getElementById('betaInput').value = camera.beta.toFixed(2);
@@ -118,7 +132,7 @@
                     document.getElementById('targetY').value = camera.target.y.toFixed(2);
                     document.getElementById('targetZ').value = camera.target.z.toFixed(2);
                 });
-
+                // Add save button for camera settings
                 const saveButton = document.createElement('button');
                 saveButton.className = 'save-btn';
                 saveButton.textContent = 'Save Camera Settings';
@@ -133,6 +147,7 @@
                         target: { x: camera.target.x, y: camera.target.y, z: camera.target.z }
                     };
                     try {
+                        // Save the current camera settings to the backend
                         const response = await fetch('/save-settings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -145,7 +160,7 @@
                     }
                 };
                 authorControls.appendChild(saveButton);
-
+                // Add camera instructions
                 const instructions = document.createElement('div');
                 instructions.className = 'instructions';
                 instructions.innerHTML = `
@@ -155,8 +170,8 @@
                     • Mouse Wheel: Zoom
                 `;
                 authorControls.appendChild(instructions);
-
             }, null, function (scene, message) {
+                // Show user-friendly error message if model fails to load
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'error-message';
                 errorDiv.innerText = 'Error loading model: ' + message + '\nPlease check that the model file exists and the path is correct.';

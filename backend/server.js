@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const cors = require('cors');
 const fs = require('fs');
 const app = express();
 
@@ -21,8 +20,6 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // Serve backend static files for models and info
 app.use('/models', express.static(modelsDir));
 app.use('/model-info', express.static(modelInfoDir));
-
-app.use(cors());
 
 app.use(express.json()); // Add this to parse JSON bodies
 

@@ -3,21 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Babylon.js Viewer Page</title>
+    <title>3D Model Viewer</title>
     <link rel="stylesheet" href="styles/viewer.css">
+    <!-- Babylon.js core and loader -->
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 </head>
 <body>
+    <!-- The canvas where Babylon.js will render the 3D scene -->
     <canvas id="renderCanvas"></canvas>
+    <!-- UI container for overlays (instructions, camera info, etc.) -->
     <div id="ui"></div>
     <script>
+        // Get references to DOM elements
         const canvas = document.getElementById('renderCanvas');
         const ui = document.getElementById('ui');
         let modelUrl = null;
         let cameraSettings = null;
+
+        // Fetch model and camera settings from the backend
         (async () => {
             try {
+                // Fetch the model-info.json file containing modelUrl and camera settings
                 const response = await fetch('/model-info/model-info.json');
                 const settings = await response.json();
                 modelUrl = settings.modelUrl;
@@ -30,10 +37,13 @@
             } catch (e) {
                 console.error('Failed to load model-info.json:', e);
             }
+            // Initialize the Babylon.js viewer with the loaded settings
             createBabylonViewer(canvas, modelUrl, cameraSettings);
         })();
 
+        // Main function to set up the Babylon.js scene and camera
         function createBabylonViewer(canvas, modelUrl, cameraSettings) {
+            // Create the Babylon.js engine and scene
             const engine = new BABYLON.Engine(canvas, true);
             const scene = new BABYLON.Scene(engine);
 
