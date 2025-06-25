@@ -8,6 +8,7 @@ This project provides a web-based 3D model viewer and authoring tool using Babyl
 - **3D Model Authoring Tool**: Upload `.glb`/`.gltf` models, adjust camera (alpha, beta, radius, target), and save settings.
 - **3D Model Viewer**: View the uploaded model with the saved camera settings.
 - **Modern UI**: Clean, responsive, and user-friendly interface.
+- **Example Model Included**: An example 3D model (`tree1.glb`) is provided in the `example_3D_model` folder so you can test the app immediately.
 
 ---
 
@@ -71,6 +72,7 @@ npm start
 - The backend must have write permissions to the `backend/models` and `backend/model-info` folders.
 - The project is designed for local or single-server deployment. For multi-user or production use, consider adding authentication and user-specific storage.
 - CORS is not enabled by default; both frontend and backend are served from the same server.
+- An example model (`example_3D_model/tree1.glb`) is included for testing.
 
 ---
 
