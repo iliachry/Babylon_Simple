@@ -68,10 +68,4 @@ html, body {
     box-shadow: 0 2px 16px rgba(0,0,0,0.25);
     z-index: 100;
     text-align: center;
-}
-
-#modelFrame { 
-    width: 100vw; 
-    height: 100vh; 
-    border: none; 
 } 
