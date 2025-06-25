@@ -1,21 +1,35 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const cors = require('cors');
 const fs = require('fs');
 const app = express();
+
+// Ensure models and model-info directories exist
+const modelsDir = path.join(__dirname, 'models');
+if (!fs.existsSync(modelsDir)) {
+    fs.mkdirSync(modelsDir);
+}
+const modelInfoDir = path.join(__dirname, 'model-info');
+if (!fs.existsSync(modelInfoDir)) {
+    fs.mkdirSync(modelInfoDir);
+}
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Serve backend static files for models and info
-app.use('/models', express.static(__dirname));
+app.use('/models', express.static(modelsDir));
+app.use('/model-info', express.static(modelInfoDir));
+
+app.use(cors());
 
 app.use(express.json()); // Add this to parse JSON bodies
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, __dirname); // Save files in the backend directory
+        cb(null, modelsDir); // Save files in the backend/models directory
     },
     filename: function (req, file, cb) {
         // Keep original filename
@@ -43,7 +57,7 @@ app.post('/upload-model', upload.single('model'), (req, res) => {
 app.post('/save-settings', (req, res) => {
     try {
         const settings = req.body;
-        fs.writeFileSync(path.join(__dirname, 'model-info.json'), JSON.stringify(settings, null, 2));
+        fs.writeFileSync(path.join(modelInfoDir, 'model-info.json'), JSON.stringify(settings, null, 2));
         res.json({ success: true });
     } catch (error) {
         console.error('Error saving settings:', error);

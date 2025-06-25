@@ -18,7 +18,7 @@
         let cameraSettings = null;
         (async () => {
             try {
-                const response = await fetch('/models/model-info.json');
+                const response = await fetch('/model-info/model-info.json');
                 const settings = await response.json();
                 modelUrl = settings.modelUrl;
                 cameraSettings = {
@@ -44,6 +44,7 @@
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
+            // Apply camera settings
             if (cameraSettings) {                       
                         camera.setTarget(new BABYLON.Vector3(
                             cameraSettings.target.x,

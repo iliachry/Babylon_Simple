@@ -19,3 +19,7 @@ Thumbs.db
 # Misc
 *.swp
 backend/model-info.json
+
+# Ignore backend model-info and models folders
+backend/model-info/
+backend/models/
