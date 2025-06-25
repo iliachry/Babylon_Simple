@@ -104,6 +104,9 @@
                     <label>Alpha: <input type="number" id="alphaInput" step="0.1"></label>
                     <label>Beta: <input type="number" id="betaInput" step="0.1"></label>
                     <label>Radius: <input type="number" id="radiusInput" step="0.1"></label>
+                    <label>Target X: <input type="number" id="targetX" step="0.1" readonly></label>
+                    <label>Target Y: <input type="number" id="targetY" step="0.1" readonly></label>
+                    <label>Target Z: <input type="number" id="targetZ" step="0.1" readonly></label>
                 `;
                 authorControls.appendChild(cameraControlsGroup);
 
@@ -111,6 +114,9 @@
                     document.getElementById('alphaInput').value = camera.alpha.toFixed(2);
                     document.getElementById('betaInput').value = camera.beta.toFixed(2);
                     document.getElementById('radiusInput').value = camera.radius.toFixed(2);
+                    document.getElementById('targetX').value = camera.target.x.toFixed(2);
+                    document.getElementById('targetY').value = camera.target.y.toFixed(2);
+                    document.getElementById('targetZ').value = camera.target.z.toFixed(2);
                 });
 
                 const saveButton = document.createElement('button');
